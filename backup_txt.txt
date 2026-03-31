@@ -1,0 +1,90 @@
+//   app.get("/importAll/:system", async (req, res) => {
+//     const db = await cds.connect.to("db");
+//     const result = await db.run(
+//       `SELECT TABLE_NAME FROM SYS.TABLES 
+//          WHERE SCHEMA_NAME = CURRENT_SCHEMA 
+//          AND IS_SYSTEM_TABLE = 'FALSE'`
+//     );
+//     const realTables = result
+//       .map(({ TABLE_NAME }) => TABLE_NAME)
+//       .filter(name => !name.includes("::") && !name.includes("TT"));
+//     let mapped = realTables.map(i => {
+//       let objmap = {
+//         tableName: i
+//       }
+//       return objmap
+//     })
+
+//     const dominurl = [
+//       {
+//         system: 'test',
+//         url: "https://sbptest1-test-dataclassifer-srv.cfapps.us10-001.hana.ondemand.com"
+//       },
+//       {
+//         system: 'dev',
+//         url: "https://sbpbtp-vcpprovider-sc0jeojq-dev-dataclassifer-srv.cfapps.us10.hana.ondemand.com"
+//       }
+//     ]
+//     let getURl = dominurl.filter(i => i.system == req.params.system)
+//     if (!(getURl.length == 0)) {
+//       for (let index = 0; index < mapped.length; index++) {
+//         const { tableName } = mapped[index];
+//         const response = await axios.get(`${getURl[0].url}/stream/${tableName}`)
+//         const data = response.data
+//         console.timeEnd();
+//         cds.spawn(() => processLargeInsert(data, tableName));
+//       }
+//     }
+//     else {
+//       res.json({
+//         StatusCode: 404,
+//         Status: `${req.params.system} is not Available for import`
+//       })
+//     }
+
+//   });
+//   app.get("/impAll/:system", async (req, res) => {
+//   try {
+//     const db = await cds.connect.to("db");
+//     const result = await db.run(
+//       `SELECT TABLE_NAME FROM SYS.TABLES 
+//        WHERE SCHEMA_NAME = CURRENT_SCHEMA 
+//        AND IS_SYSTEM_TABLE = 'FALSE'`
+//     );
+//     const realTables = result
+//       .map(({ TABLE_NAME }) => TABLE_NAME)
+//       .filter(name => !name.includes("::") && !name.includes("TT"));
+
+//     const dominurl = [
+//       {
+//         system: 'test',
+//         url: "https://sbptest1-test-dataclassifer-srv.cfapps.us10-001.hana.ondemand.com"
+//       },
+//       {
+//         system: 'dev',
+//         url: "https://sbpbtp-vcpprovider-sc0jeojq-dev-dataclassifer-srv.cfapps.us10.hana.ondemand.com"
+//       }
+//     ];
+//     let getURl = dominurl.find(i => i.system === req.params.system);
+//     if (!getURl) {
+//       return res.status(404).json({
+//         Status: `${req.params.system} is not available`
+//       });
+//     }
+//     res.json({ Status: "Import Started Sequentially" });
+//     for (const tableName of realTables) {
+//       console.log(`Starting import for ${tableName}`);
+//       await importTableSequential(getURl.url, tableName);
+//       console.log(`Finished import for ${tableName}`);
+//       await new Promise(resolve => setTimeout(resolve, 2000));
+//     }
+
+//     console.log("All tables imported");
+
+//   } catch (error) {
+
+//     console.error("ImportAll Error:", error);
+
+//   }
+
+// });

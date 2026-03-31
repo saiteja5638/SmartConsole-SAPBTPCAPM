@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Import Console</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181c23;
+    --border: rgba(255,255,255,0.07);
+    --border-active: rgba(99,179,237,0.5);
+    --accent: #63b3ed;
+    --accent2: #76e4f7;
+    --accent-glow: rgba(99,179,237,0.15);
+    --danger: #fc8181;
+    --success: #68d391;
+    --warning: #f6ad55;
+    --text: #e2e8f0;
+    --text-muted: #718096;
+    --text-dim: #4a5568;
+    --run: #63b3ed;
+    --run-hover: #90cdf4;
+    --all: #9f7aea;
+    --all-hover: #b794f4;
+  }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(99,179,237,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,179,237,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Radial glow top-center */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 700px;
+    height: 500px;
+    background: radial-gradient(ellipse at center, rgba(99,179,237,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 720px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .brand-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    opacity: 0.8;
+  }
+
+  .brand-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #fff;
+    line-height: 1;
+  }
+
+  .brand-title span {
+    color: var(--accent);
+  }
+
+  .status-dot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 8px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    margin-top: 4px;
+  }
+
+  .status-dot::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 8px var(--success);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    animation: fadeUp 0.7s ease 0.1s both;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03) inset;
+  }
+
+  .card-header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(to right, rgba(99,179,237,0.05), transparent);
+  }
+
+  .card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--accent-glow);
+    border: 1px solid rgba(99,179,237,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .card-icon svg {
+    width: 18px;
+    height: 18px;
+    stroke: var(--accent);
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .card-title-group { flex: 1; }
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.01em;
+  }
+  .card-subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .card-body { padding: 28px; }
+
+  /* Fields */
+  .fields {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 8px; }
+
+  .field-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .field-label .required {
+    color: var(--accent);
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .select-wrap {
+    position: relative;
+  }
+
+  .select-wrap::after {
+    content: '';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid var(--text-muted);
+    pointer-events: none;
+    transition: border-color 0.2s;
+  }
+
+  .select-wrap:hover::after { border-top-color: var(--accent); }
+
+  select {
+    width: 100%;
+    appearance: none;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 12px 40px 12px 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    outline: none;
+  }
+
+  select:hover {
+    border-color: rgba(99,179,237,0.3);
+    background: #1d2330;
+  }
+
+  select:focus {
+    border-color: var(--border-active);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  select option {
+    background: #1a1e28;
+    color: var(--text);
+  }
+
+  /* Environment badges */
+  .env-indicator {
+    position: absolute;
+    right: 38px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    pointer-events: none;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+
+  /* Info row */
+  .info-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: rgba(99,179,237,0.04);
+    border: 1px solid rgba(99,179,237,0.1);
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    transition: all 0.3s;
+  }
+
+  .info-row svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--accent);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+  }
+
+  .info-row .info-value {
+    color: var(--accent);
+    font-weight: 500;
+    transition: all 0.3s;
+  }
+
+  /* Buttons */
+  .btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 8px;
+  }
+
+  .btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 15px 20px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    overflow: hidden;
+    outline: none;
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+    border-radius: inherit;
+  }
+
+  .btn:hover::before { opacity: 1; }
+  .btn:active { transform: scale(0.97); }
+
+  .btn svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+    transition: transform 0.3s;
+  }
+
+  .btn:hover svg { transform: scale(1.15) rotate(-5deg); }
+
+  /* Run Import */
+  .btn-run {
+    background: linear-gradient(135deg, #2b6cb0, #3182ce);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(49,130,206,0.3), 0 1px 0 rgba(255,255,255,0.1) inset;
+    border: 1px solid rgba(99,179,237,0.3);
+  }
+  .btn-run::before { background: linear-gradient(135deg, #3182ce, #4299e1); }
+  .btn-run:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(49,130,206,0.5), 0 1px 0 rgba(255,255,255,0.15) inset;
+  }
+
+  /* Import All */
+  .btn-all {
+    background: linear-gradient(135deg, #553c9a, #6b46c1);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(107,70,193,0.3), 0 1px 0 rgba(255,255,255,0.1) inset;
+    border: 1px solid rgba(159,122,234,0.3);
+  }
+  .btn-all::before { background: linear-gradient(135deg, #6b46c1, #805ad5); }
+  .btn-all:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(107,70,193,0.5), 0 1px 0 rgba(255,255,255,0.15) inset;
+  }
+
+  /* Loading spinner inside button */
+  .btn-spinner {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  .btn.loading .btn-icon { display: none; }
+  .btn.loading .btn-spinner { display: block; }
+  .btn.loading { pointer-events: none; opacity: 0.8; }
+
+  /* Log area */
+  .log-section {
+    margin-top: 20px;
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+  }
+
+  .log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .log-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .log-clear {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    background: none;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    transition: color 0.2s;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .log-clear:hover { color: var(--danger); background: rgba(252,129,129,0.08); }
+
+  .log-box {
+    background: #080a0e;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    min-height: 90px;
+    max-height: 180px;
+    overflow-y: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 11.5px;
+    line-height: 1.8;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .log-box::-webkit-scrollbar { width: 4px; }
+  .log-box::-webkit-scrollbar-track { background: transparent; }
+  .log-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .log-entry {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .log-time { color: var(--text-dim); flex-shrink: 0; }
+  .log-msg { flex: 1; }
+  .log-info .log-msg { color: var(--text-muted); }
+  .log-success .log-msg { color: var(--success); }
+  .log-error .log-msg { color: var(--danger); }
+  .log-warn .log-msg { color: var(--warning); }
+  .log-accent .log-msg { color: var(--accent2); }
+
+  .log-empty {
+    color: var(--text-dim);
+    text-align: center;
+    padding: 16px 0;
+    font-style: italic;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 28px;
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    animation: fadeUp 0.8s ease 0.3s both;
+  }
+
+  .footer span { color: var(--text-muted); }
+
+  /* Animations */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-6px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 100;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 320px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-success { background: #1a2e1e; border: 1px solid rgba(104,211,145,0.3); color: var(--success); }
+  .toast-error   { background: #2e1a1a; border: 1px solid rgba(252,129,129,0.3); color: var(--danger); }
+  .toast-info    { background: #1a2535; border: 1px solid rgba(99,179,237,0.3);  color: var(--accent); }
+  .toast svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+  /* Progress bar */
+  .progress-wrap {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 14px;
+    display: none;
+  }
+  .progress-wrap.active { display: block; }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent));
+    background-size: 200% 100%;
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.4s ease;
+    animation: shimmer 1.5s infinite linear;
+  }
+
+  @media (max-width: 540px) {
+    .field-row { grid-template-columns: 1fr; }
+    .btn-row { grid-template-columns: 1fr; }
+    .header { flex-direction: column; gap: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="brand">
+      <span class="brand-tag">&#x25A0; Data Pipeline</span>
+      <h1 class="brand-title">Import<span>Console</span></h1>
+    </div>
+    <div class="status-dot">System Ready</div>
+  </div>
+
+  <!-- Main Card -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </div>
+      <div class="card-title-group">
+        <div class="card-title">Configure Import Job</div>
+        <div class="card-subtitle">Select source table and target environment</div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="fields">
+
+        <!-- Row 1: Table + Environment -->
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label" for="tableSelect">
+              Source Table <span class="required">*</span>
+            </label>
+            <div class="select-wrap">
+              <select id="tableSelect" onchange="updateInfo()">
+                <option value="">— Loading tables… —</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="envSelect">
+              Environment <span class="required">*</span>
+            </label>
+            <div class="select-wrap" style="position:relative;">
+              <div class="env-indicator" id="envDot"></div>
+              <select id="envSelect" onchange="updateEnvDot(); updateInfo()">
+                <option value="">— Select Env —</option>
+                <option value="test">TEST</option>
+                <option value="devtest">DEV-TEST</option>
+                <option value="dev">DEV</option>
+                <option value="prod">PROD</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info row -->
+        <div class="info-row" id="infoRow">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="infoText">Select a table and environment to proceed.</span>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="btn-row">
+          <button class="btn btn-run" id="btnRun" onclick="runImport()">
+            <svg class="btn-icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <div class="btn-spinner"></div>
+            <span class="btn-label">Run Import</span>
+          </button>
+          <button class="btn btn-all" id="btnAll" onclick="importAll()">
+            <svg class="btn-icon" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <div class="btn-spinner"></div>
+            <span class="btn-label">Import All</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Log -->
+      <div class="log-section">
+        <div class="log-header">
+          <span class="log-title">&#x25BA; Activity Log</span>
+          <button class="log-clear" onclick="clearLog()">CLEAR</button>
+        </div>
+        <div class="log-box" id="logBox">
+          <div class="log-empty" id="logEmpty">No activity yet.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Import Console &nbsp;&#x2022;&nbsp; <span>v2.4.1</span> &nbsp;&#x2022;&nbsp; <span id="footerTime"></span>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <svg id="toastIcon" viewBox="0 0 24 24"></svg>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+// ─── Env dot colors ────────────────────────────────────────────────────────
+const ENV_COLORS = {
+  test:    '#f6ad55',
+  devtest: '#76e4f7',
+  dev:     '#63b3ed',
+  prod:    '#fc8181'
+};
+
+function updateEnvDot() {
+  const val = document.getElementById('envSelect').value;
+  const dot = document.getElementById('envDot');
+  if (val && ENV_COLORS[val]) {
+    dot.style.background = ENV_COLORS[val];
+    dot.style.boxShadow  = `0 0 8px ${ENV_COLORS[val]}`;
+  } else {
+    dot.style.background = 'transparent';
+    dot.style.boxShadow  = 'none';
+  }
+}
+
+// ─── Info row ──────────────────────────────────────────────────────────────
+function updateInfo() {
+  const tbl = document.getElementById('tableSelect').value;
+  const env = document.getElementById('envSelect').value;
+  const info = document.getElementById('infoText');
+  const row  = document.getElementById('infoRow');
+
+  if (tbl && env) {
+    const envLabel = document.getElementById('envSelect').selectedOptions[0].text;
+    info.innerHTML = `Ready to import <span class="info-value">${tbl}</span> → <span class="info-value">${envLabel}</span>`;
+    row.style.borderColor = 'rgba(99,179,237,0.25)';
+    row.style.background  = 'rgba(99,179,237,0.06)';
+  } else if (tbl || env) {
+    info.innerHTML = `<span class="info-value">Select both</span> table and environment to continue.`;
+    row.style.borderColor = 'rgba(246,173,85,0.2)';
+    row.style.background  = 'rgba(246,173,85,0.04)';
+  } else {
+    info.innerHTML = 'Select a table and environment to proceed.';
+    row.style.borderColor = 'rgba(99,179,237,0.1)';
+    row.style.background  = 'rgba(99,179,237,0.04)';
+  }
+}
+
+// ─── Toast ─────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = 'info') {
+  const el  = document.getElementById('toast');
+  const ico = document.getElementById('toastIcon');
+  const txt = document.getElementById('toastMsg');
+  const icons = {
+    success: '<polyline points="20 6 9 17 4 12"/>',
+    error:   '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+    info:    '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'
+  };
+  el.className = `toast toast-${type}`;
+  ico.innerHTML = icons[type] || icons.info;
+  txt.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ─── Log ───────────────────────────────────────────────────────────────────
+function addLog(msg, type = 'info') {
+  const box   = document.getElementById('logBox');
+  const empty = document.getElementById('logEmpty');
+  if (empty) empty.remove();
+
+  const now  = new Date();
+  const time = now.toTimeString().split(' ')[0];
+  const div  = document.createElement('div');
+  div.className = `log-entry log-${type}`;
+  div.innerHTML  = `<span class="log-time">${time}</span><span class="log-msg">${msg}</span>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function clearLog() {
+  const box = document.getElementById('logBox');
+  box.innerHTML = '<div class="log-empty" id="logEmpty">No activity yet.</div>';
+}
+
+
+// ─── Core import fetch ─────────────────────────────────────────────────────
+async function triggerImport(tableName, systemName) {
+  const url = `/importTable/${encodeURIComponent(tableName)}/${encodeURIComponent(systemName)}`;
+  addLog(`→ GET ${url}`, 'accent');
+  const res = await fetch(url);
+  let body;
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('application/json')) {
+    const data = await res.json();
+    body = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  } else {
+    body = await res.text();
+  }
+  return { ok: res.ok, status: res.status, body };
+}
+
+function logResponse(ok, status, body, tableName, envLabel) {
+  const lines = body ? body.split('\n').filter(l => l.trim()) : [];
+  if (lines.length > 0) {
+    lines.forEach(line => addLog(line.trim(), ok ? 'success' : 'error'));
+  } else {
+    addLog(ok
+      ? `Import succeeded: ${tableName} → ${envLabel} [${status}]`
+      : `Import failed: ${tableName} → ${envLabel} [${status}]`,
+      ok ? 'success' : 'error');
+  }
+}
+
+// ─── Run Import ────────────────────────────────────────────────────────────
+async function runImport() {
+  const tbl = document.getElementById('tableSelect').value;
+  const env = document.getElementById('envSelect').value;
+
+  if (!tbl) { showToast('Please select a source table.', 'error'); addLog('Import failed — no table selected.', 'error'); return; }
+  if (!env) { showToast('Please select an environment.', 'error'); addLog('Import failed — no environment selected.', 'error'); return; }
+
+  const envLabel = document.getElementById('envSelect').selectedOptions[0].text;
+  const btn = document.getElementById('btnRun');
+  btn.classList.add('loading');
+
+  addLog(`Initiating import: ${tbl} → ${envLabel}`, 'accent');
+
+  const wrap = document.getElementById('progressWrap');
+  const bar  = document.getElementById('progressBar');
+  wrap.classList.add('active');
+  bar.style.width = '40%';
+
+  try {
+    const { ok, status, body } = await triggerImport(tbl, env);
+    bar.style.width = '100%';
+    setTimeout(() => { wrap.classList.remove('active'); bar.style.width = '0%'; }, 400);
+    logResponse(ok, status, body, tbl, envLabel);
+    showToast(ok ? `Import complete: ${tbl} → ${envLabel}` : `Import failed [${status}]`, ok ? 'success' : 'error');
+  } catch (err) {
+    bar.style.width = '0%';
+    wrap.classList.remove('active');
+    addLog(`Network error: ${err.message}`, 'error');
+    showToast('Network error — check console.', 'error');
+  } finally {
+    btn.classList.remove('loading');
+  }
+}
+
+// ─── Import All ────────────────────────────────────────────────────────────
+async function importAll() {
+  const env = document.getElementById('envSelect').value;
+  if (!env) { showToast('Please select an environment.', 'error'); addLog('Import All failed — no environment selected.', 'error'); return; }
+
+  const envLabel = document.getElementById('envSelect').selectedOptions[0].text;
+  const select   = document.getElementById('tableSelect');
+  const tables   = Array.from(select.options).filter(o => o.value).map(o => o.value);
+
+  if (tables.length === 0) { showToast('No tables available.', 'error'); return; }
+
+  const btn = document.getElementById('btnAll');
+  btn.classList.add('loading');
+
+  addLog(`Import All triggered → ${envLabel} (${tables.length} tables)`, 'accent');
+
+  const wrap = document.getElementById('progressWrap');
+  const bar  = document.getElementById('progressBar');
+  wrap.classList.add('active');
+
+  let passed = 0, failed = 0;
+for (let i = 0; i < tables.length; i++) {
+
+  const t = tables[i];
+
+  await new Promise(r => setTimeout(r, 300)); // prevent flooding backend
+
+  bar.style.width = `${Math.round(((i + 0.5) / tables.length) * 100)}%`;
+
+  addLog(`[${i + 1}/${tables.length}] Queueing "${t}"…`, 'info');
+
+  try {
+
+    const { ok, status, body } = await triggerImport(t, env);
+
+    logResponse(ok, status, body, t, envLabel);
+
+    ok ? passed++ : failed++;
+
+  } catch (err) {
+
+    addLog(`"${t}" — network error: ${err.message}`, 'error');
+
+    failed++;
+
+  }
+
+  bar.style.width = `${Math.round(((i + 1) / tables.length) * 100)}%`;
+
+}
+
+  setTimeout(() => { wrap.classList.remove('active'); bar.style.width = '0%'; }, 400);
+
+  const summary = `Import All done — ${passed} succeeded, ${failed} failed.`;
+  addLog(summary, failed === 0 ? 'success' : 'warn');
+  showToast(summary, failed === 0 ? 'success' : 'error');
+  btn.classList.remove('loading');
+}
+
+// ─── Fetch tables ──────────────────────────────────────────────────────────
+async function loadTables() {
+  const select = document.getElementById('tableSelect');
+  addLog('Fetching table list from server…', 'info');
+  try {
+    const res  = await fetch('/getTableNames');
+    const data = await res.json();
+    const tables = Array.isArray(data) ? data : (data.tables || data.data || []);
+
+    select.innerHTML = '<option value="">— Select Table —</option>';
+    tables.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = opt.textContent = typeof t === 'string' ? t : (t.name || t.tableName || JSON.stringify(t));
+      select.appendChild(opt);
+    });
+    addLog(`${tables.length} table(s) loaded successfully.`, 'success');
+    showToast(`${tables.length} tables loaded.`, 'success');
+  } catch (err) {
+    // Demo fallback
+    const demo = ['orders', 'customers', 'products', 'inventory', 'transactions', 'users', 'audit_log'];
+    select.innerHTML = '<option value="">— Select Table —</option>';
+    demo.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = opt.textContent = t;
+      select.appendChild(opt);
+    });
+    addLog(`Server unreachable — loaded demo tables (${demo.length}).`, 'warn');
+    showToast('Demo mode: using sample tables.', 'info');
+  }
+}
+
+// ─── Footer clock ──────────────────────────────────────────────────────────
+function updateClock() {
+  const el = document.getElementById('footerTime');
+  if (el) el.textContent = new Date().toLocaleTimeString();
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  updateClock();
+  setInterval(updateClock, 1000);
+  loadTables();
+});
+</script>
+</body>
+</html>

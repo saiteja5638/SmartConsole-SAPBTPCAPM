@@ -1,0 +1,43 @@
+
+
+
+
+// async function CopyPasteFile1() {
+//   console.time("Export Time");
+//   const db = await cds.connect.to("db");
+//   let Configtables = await db.run(`SELECT * FROM CONFIG_TABLES WHERE STATUS != 'APPROVED'`);
+//   const CHUNK_SIZE = 10;   // tables per chunk
+//   const WORKERS = 10;      // parallel workers
+//   const chunks = [];
+//   for (let i = 0; i < Configtables.length; i += CHUNK_SIZE) {
+//     chunks.push(Configtables.slice(i, i + CHUNK_SIZE));
+//   }
+//   let index = 0;
+//   async function worker() {
+//     while (index < chunks.length) {
+//       const current = index++;
+//       const chunk = chunks[current];   // array of tables
+//       for (const table of chunk) {
+//         try {
+//           const data = await db.run(SELECT.from(table.TABLENAME));
+//           await cds.run(INSERT.into("STOREBLOCK").entries({
+//             TABLENAME: table.TABLENAME,
+//             DATA: data
+//           }))
+//           console.log(`Exported: ${table.TABLENAME}`);
+
+//         } catch (error) {
+//           console.log(`Error exporting ${table.TABLENAME}:`, error.message);
+//         }
+//       }
+//     }
+//   }
+//   const workers = [];
+//   for (let i = 0; i < WORKERS; i++) {
+//     workers.push(worker());
+//   }
+//   await Promise.all(workers);
+//   console.log("All tables exported");
+//   console.timeEnd("Export Time");
+//   return "Done"
+// }

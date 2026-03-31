@@ -1,0 +1,46 @@
+_schema-version: 3.3.0
+ID: dataclassifer
+version: 1.0.0
+description: "A simple CAP project."
+parameters:
+  enable-parallel-deployments: true
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm ci
+        - npx cds build --production
+modules:
+  - name: dataclassifer-srv
+    type: nodejs
+    path: gen/srv
+    requires:
+      - name: cap_servs-db
+      - name: config_products-db
+      - name: configprodoauth
+    parameters:
+      instances: 1
+      buildpack: nodejs_buildpack
+    build-parameters:
+      builder: npm-ci
+    provides:
+      - name: srv-api 
+        properties:
+          srv-url: ${default-url}
+
+resources:
+  - name: cap_servs-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+  - name: config_products-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared    
+  - name: configprodoauth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application

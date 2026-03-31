@@ -1,0 +1,2 @@
+GET  http://localhost:4004/importTable1/LOCATION_MASTER_TEST
+Content-Type: application/json
